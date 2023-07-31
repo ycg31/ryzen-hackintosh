@@ -1,4 +1,4 @@
-# OpenCore EFI for AMD Ryzen Hackintosh
+# OpenCore EFI for AMD Ryzen Hackintosh [![tests](https://github.com/mikigal/ryzen-hackintosh/actions/workflows/tests.yml/badge.svg)](https://github.com/mikigal/ryzen-hackintosh/actions/workflows/tests.yml)
 
 ## Verified Specification
 
@@ -13,8 +13,8 @@
 | WiFi & Bluetooth | Fenvi T919 (BCM94360CD)                    |
 | OS Disk (NVMe)   | ADATA SX8200 Pro 1TB                       |
 
-**macOS version**: 12.4 (21F79) \
-**OpenCore version**: 0.8.0
+**macOS version**: 13.3.1 (a) (22E772610a) \
+**OpenCore version**: 0.9.3
 
 ## Table of contents
 
@@ -32,13 +32,14 @@
 
 ## Software Compatibility
 
+- Ventura (13.x)
 - Monterey (12.x)
 - Big Sur (11.x)
 - Catalina (10.15.x)
 - Mojave (10.14.x)
 - High Sierra (10.13.x)
 
-There were some reports about issues that occur while using MSI motherboards on Monterey Beta 3. The only possible solution to this problem as of right now is to downgrade to Monterey Beta 2 and wait for a confirmed workaround.
+**Note about macOS Sonoma**: I don't add support for macOS Sonoma due to many bugs (in OpenCore, kexts and beta of macOS). You can do it yourself by updating OC, kexts and kernel patches manually to it's beta versions. Support will be added after public beta release. Also Broadcome WiFi cards **does not work** for now as Apple removed it's support. Support may be added in future by some kext, but it's not guaranteed.
 
 ## Hardware Compatibility
 
@@ -115,6 +116,8 @@ If you experience any issues with your network connection, then your best bet wo
 
 If you use High Sierra and Realtek 8111 Ethernet Card then you should use [older version of kext](https://github.com/Mieze/RTL8111_driver_for_OS_X/releases/tag/v2.2.2).
 
+If you have issues with network card on Monterey or newer try adding `e1000=0` to `boots-args`.
+
 SmallTree kext does not work on Monterey for now. You can try [AppleIGB kext](https://cdn.discordapp.com/attachments/724618275971137568/879288441278435348/AppleIGB.kext.zip), it works on some systems. If it does not work you have to stay on Big Sur and wait for SmallTree's update.
 
 ### WiFi and Bluetooth
@@ -133,13 +136,14 @@ Rembember that AirDrop, Handoff, etc. works only on cards with Broadcom chip.
 ### Modifying kernel patches
 3. Modify Core Count patches to match your CPU's cores amount.
 
-  - Find three `algrey - Force cpuid_cores_per_package` patches under `Kernel -> Patch` in your config.
+  - Find four `algrey - Force cpuid_cores_per_package` patches under `Kernel -> Patch` in your config.
   - Modify these patches for your CPU physical cores. Change **first pair** of `00` in `Replace` of these patches to `Hex value` from below table.
 
     - e. g. for Ryzen 7 1700 with 8 Cores three modified patches should look like:
       - B8 **00** 0000 0000 -> B8 **08** 0000 0000
       - BA **00** 0000 0000 -> BA **08** 0000 0000
       - BA **00** 0000 0090 -> BA **08** 0000 0090
+      - BA **00** 0000 00 -> BA **08** 0000 00
 
 | **Physical CPU cores** | **Hex value** |
 | ---------------------- | ------------- |
@@ -148,6 +152,8 @@ Rembember that AirDrop, Handoff, etc. works only on cards with Broadcom chip.
 | 8 Cores                | `08`          |
 | 12 Cores               | `0C`          |
 | 16 Cores               | `10`          |
+| 24 Cores               | `18`          |
+| 32 Cores               | `20`          |
 
 ### SMBIOS
 
@@ -255,10 +261,6 @@ Firstly, check if your sleep works out of the box. If it works, you can skip rea
 The most common reason of broken sleep on AMD systems are USB problems. \
 You have to map your USB ports. If you have working Windows instance I recommend [this tool](https://github.com/usbtoolbox/tool), otherwise you have to [do it manually](https://dortania.github.io/OpenCore-Post-Install/usb/#macos-and-the-15-port-limit). \
 After mapping remember to disable `Kernel -> Quriks -> XhciPortLimit` in your configuration file.
-
-If map does not fix your issue you can try to patch `_STA` method of your USB controllers. Go to `ACPI -> Add` in your configuration file and set `Enabled` to `true` under `SSTD-SLEEP` section. By default this SSDT patches `_SB.PCI0.GPP2.PTXH` device. In most cases your controller will have another address. \
-You can find it with [Hackintool](https://github.com/headkaze/Hackintool) - go to `PCIe` tab, then look for devices with `USB controller` value under `Subclass`. When you find address of your controller you have to open `SSDT-SLEEP.aml` with [MaciASL](https://github.com/acidanthera/MaciASL) and change addresses.
-If you have more than one controller you can try to patch `_STA` for every of them.
 
 If USB fixes does not help, probably something another is broken. You can read more detailed guide about it on [Dortania](https://dortania.github.io/OpenCore-Post-Install/universal/sleep.html).
 
